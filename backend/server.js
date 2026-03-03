@@ -18,8 +18,6 @@ import invoiceRoutes from "./routes/invoiceRoutes.js";
 import reportRoutes from "./routes/reportRoutes.js";
 
 
-
-
 dotenv.config();
 
 const app = express();
@@ -50,9 +48,10 @@ app.use(morgan("dev"));
 // 2. Rate Limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 1000,
+  message: "Too many requests from this IP, please try again later.",
 });
-app.use("/api", limiter);
+ app.use("/api", limiter);
 
 // 3. Static folder for uploads
 //app.use("/uploads", express.static(path.join(__dirname, "uploads")));
