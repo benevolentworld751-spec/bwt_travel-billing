@@ -56,7 +56,7 @@ export const createInvoice = asyncHandler(async (req, res) => {
     };
   });
 
-  const grandTotal = subTotal + cgst + sgst + igst + Number(tcs) - Number(tds);
+  const grandTotal = subTotal + Number(tcs) - Number(tds);
 
   // Create invoice in DB
   const invoice = await Invoice.create({
@@ -83,21 +83,45 @@ export const createInvoice = asyncHandler(async (req, res) => {
 // DOWNLOAD INVOICE PDF
 // ==============================
 export const getInvoicePDF = asyncHandler(async (req, res) => {
-  const invoice = await Invoice.findById(req.params.id);
+  const invoiceId = req.params.id;
+  console.log(`🔍 [PDF Request] Find Invoice: ${invoiceId}`);
 
+  // 1. Find Invoice
+  const invoice = await Invoice.findById(invoiceId);
   if (!invoice) {
+    console.error("❌ Invoice not found in DB");
     res.status(404);
     throw new Error("Invoice not found");
   }
 
-  const business = await Business.findById(invoice.businessId);
-  const customer = await Customer.findById(invoice.customerId);
-
-  if (!business || !customer) {
+  // 2. Find Business (CRITICAL)
+  let business = await Business.findById(invoice.businessId);
+  
+  if (!business) {
+    console.error(`❌ CRITICAL: Business with ID ${invoice.businessId} is missing!`);
+    // Attempt to recover if you have snapshot data, otherwise fail
     res.status(404);
-    throw new Error("Business or Customer not found");
+    throw new Error(`Business (ID: ${invoice.businessId}) not found. Cannot generate Invoice.`);
   }
 
-  // Generate PDF on-the-fly
+  // 3. Find Customer (SOFT CHECK)
+  let customer = await Customer.findById(invoice.customerId);
+  
+  if (!customer) {
+    console.warn(`⚠️ Warning: Customer with ID ${invoice.customerId} is missing. Using placeholder.`);
+    
+    // FALLBACK DATA: Allows PDF to generate even if customer is deleted
+    customer = {
+      name: "Deleted Customer",
+      email: "N/A",
+      phone: "N/A",
+      address: "Address not available",
+      gstNumber: "N/A"
+    };
+  }
+
+  console.log("✅ Data ready. Generating PDF...");
+
+  // 4. Generate PDF
   await generateInvoicePDF(invoice, business, customer, res);
 });

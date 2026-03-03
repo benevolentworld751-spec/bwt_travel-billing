@@ -6,17 +6,13 @@ const api = axios.create({
 
 // ✅ Request Interceptor: Attaches Token to every request
 api.interceptors.request.use((config) => {
-  const userStr = localStorage.getItem('user');
+  const token = localStorage.getItem('token');
+
   console.log("Interceptor running");
-  console.log("Stored user:", userStr);
+  console.log("Token:", token);
 
-  if (userStr) {
-    const user = JSON.parse(userStr);
-    console.log("Token found:", user.token);
-
-    if (user.token) {
-      config.headers.Authorization = `Bearer ${user.token}`;
-    }
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
 
   return config;

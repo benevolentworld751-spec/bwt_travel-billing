@@ -61,7 +61,6 @@ export const generateInvoicePDF = async (invoice, business, customer, res) => {
 
   // --- Generate Invoice Number if not present ---
   if (!invoice.invoiceNumber) {
-    // If you are using MongoDB/Mongoose, ensure business._id is passed correctly
     invoice.invoiceNumber = await generateInvoiceNumber(business._id);
   }
 
@@ -86,7 +85,6 @@ export const generateInvoicePDF = async (invoice, business, customer, res) => {
   }
 
   // 2. Company Name (Parallel to Logo, Violet)
-  // X=120 ensures it sits right next to the logo
   doc.fillColor(VIOLET_COLOR).fontSize(20).font("Helvetica-Bold");
   doc.text(business.name, 120, 50, { width: 300, align: 'left' });
 
@@ -101,28 +99,25 @@ export const generateInvoicePDF = async (invoice, business, customer, res) => {
   // ==============================
   // B. ADDRESS SECTION (Parallel Columns)
   // ==============================
-  const addressY = 140; // Fixed Y position for alignment
+  const addressY = 140; 
 
   // --- Left Side: FROM ---
   doc.fontSize(10).font("Helvetica-Bold").fillColor(TEXT_BLACK);
   doc.text("From:", 40, addressY);
   
   doc.font("Helvetica").fontSize(10).fillColor(TEXT_GREY);
-  // Using width: 250 to ensure address wraps without hitting the right column
   doc.text(business.address, 40, addressY + 15, { width: 250, align: 'left' });
   
-  // Dynamic Y based on address length
   let leftY = doc.y + 5; 
   doc.text(`GST: ${business.gstNumber || "-"}`, 40, leftY);
   doc.text(`Phone: ${business.phone || "-"}`, 40, leftY + 15);
 
   // --- Right Side: BILL TO ---
   doc.fontSize(10).font("Helvetica-Bold").fillColor(TEXT_BLACK);
-  doc.text("Bill To:", 350, addressY); // 350 starts the right column
+  doc.text("Bill To:", 350, addressY); 
   
   doc.font("Helvetica").fontSize(10).fillColor(TEXT_GREY);
   doc.text(customer.name, 350, addressY + 15);
-  // Using width: 200 to keep it tidy
   doc.text(customer.address || "", 350, doc.y, { width: 200, align: 'left' });
   doc.text(`Phone: ${customer.phone || "-"}`, 350, doc.y + 5);
 
@@ -141,7 +136,6 @@ export const generateInvoicePDF = async (invoice, business, customer, res) => {
   doc.fillColor(TEXT_WHITE).font("Helvetica-Bold");
   const headerTextY = tableTop + 10;
   
-  // Columns based on PDF: Service | Description | Ref/PNR | Amount
   doc.text("Service", 50, headerTextY);
   doc.text("Description", 150, headerTextY);
   doc.text("Ref/PNR", 350, headerTextY);
@@ -151,7 +145,6 @@ export const generateInvoicePDF = async (invoice, business, customer, res) => {
   let position = tableTop + rowHeight;
   doc.font("Helvetica");
 
-  // Recalculate totals to be safe
   let subTotal = 0;
   
   invoice.items.forEach((item, index) => {
@@ -159,13 +152,11 @@ export const generateInvoicePDF = async (invoice, business, customer, res) => {
     const itemTotal = Number(item.total || 0);
     subTotal += itemTotal;
 
-    // Zebra Striping
     if (index % 2 === 0) {
       doc.rect(pageMargin, position, tableWidth, rowHeight).fill(ROW_COLOR_ODD);
     }
     
     doc.fillColor(TEXT_BLACK);
-
     doc.text(item.serviceType, 50, textY);
     doc.text(item.description, 150, textY);
     doc.text(item.pnr || "-", 350, textY);
@@ -174,7 +165,6 @@ export const generateInvoicePDF = async (invoice, business, customer, res) => {
     position += rowHeight;
   });
 
-  // Bottom Line
   doc.strokeColor(PRIMARY_COLOR).lineWidth(1);
   doc.moveTo(pageMargin, position).lineTo(pageMargin + tableWidth, position).stroke();
 
@@ -188,30 +178,34 @@ export const generateInvoicePDF = async (invoice, business, customer, res) => {
   doc.moveTo(300, totalStart).lineTo(555, totalStart).stroke();
   doc.fillColor(TEXT_BLACK);
 
-  // Helper function for totals
+  // Helper for totals
   const printTotal = (label, value, y, isBold = false) => {
     if(isBold) doc.font("Helvetica-Bold");
     else doc.font("Helvetica");
     doc.text(label, 350, y);
-    doc.text(Number(value).toFixed(2), 510, y, { align: "right" });
+    // Explicit width prevents wrapping, align right ensures numbers align
+    doc.text(Number(value).toFixed(2), 405, y, { width: 150, align: "right" });
   };
 
   printTotal("Subtotal:", subTotal, totalStart + 15);
-
-  // Tax Logic: If values exist in invoice object, use them. 
-  // Otherwise, you might want to calculate them here (e.g., 18%).
-  // Assuming they are passed in invoice object for accuracy:
   printTotal("CGST:", invoice.cgst || 0, totalStart + 30);
   printTotal("SGST:", invoice.sgst || 0, totalStart + 45);
   printTotal("IGST:", invoice.igst || 0, totalStart + 60);
 
-  // Grand Total Box
+  // --- GRAND TOTAL FIX ---
   const grandTotal = invoice.grandTotal || (subTotal + (invoice.cgst||0) + (invoice.sgst||0) + (invoice.igst||0));
   
-  doc.rect(340, totalStart + 80, 215, 25).fill(ROW_COLOR_ODD);
+  // Background Box
+  doc.rect(340, totalStart + 80, 215, 28).fill(ROW_COLOR_ODD);
   doc.fillColor(PRIMARY_COLOR).font("Helvetica-Bold").fontSize(14);
+  
+  // Label
   doc.text("Grand Total:", 350, totalStart + 87);
-  doc.text(grandTotal.toFixed(2), 550, totalStart + 90, { align: "right" });
+  
+  // Value (Fixed Alignment)
+  // We use x=405 and width=150 to create a "box" ending at 555. 
+  // This prevents the number from hitting the margin and splitting vertically.
+  doc.text(grandTotal.toFixed(2), 405, totalStart + 87, { width: 150, align: "right" });
 
   // ==============================
   // E. FOOTER DETAILS
@@ -233,7 +227,6 @@ export const generateInvoicePDF = async (invoice, business, customer, res) => {
   doc.text(`IFSC: ${business.bankDetails?.ifsc || "-"}`, 40, bankY + 45);
 
   // 3. Signature
-  // Check if signature image exists, else use line
   if (business.signatureUrl && fs.existsSync(path.join(process.cwd(), business.signatureUrl))) {
       doc.image(path.join(process.cwd(), business.signatureUrl), 380, totalStart + 200, { width: 120 });
   } else {
@@ -241,7 +234,7 @@ export const generateInvoicePDF = async (invoice, business, customer, res) => {
       doc.text("Authorized Signatory", 420, totalStart + 205);
   }
 
-  // 4. Watermark (Centered)
+  // 4. Watermark
   doc.save();
   doc.fontSize(50);
   doc.fillColor("#f2f2f2");

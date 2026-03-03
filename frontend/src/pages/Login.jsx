@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useBusiness } from '../context/BusinessContext'; // <--- IMPORT THIS
 import { useNavigate, Link } from 'react-router-dom';
 import { Lock, Mail } from 'lucide-react';
 
@@ -7,8 +8,10 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false); // Added loading state for better UX
+  const [loading, setLoading] = useState(false);
+  
   const { login } = useAuth();
+  const { setBusiness } = useBusiness(); // <--- GET SETTER
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -17,9 +20,18 @@ const Login = () => {
     setError('');
     
     try {
-      await login(email, password);
+      // 1. Capture the response data from the login function
+      const data = await login(email, password);
+
+      // 2. IMPORTANT: Set the active business in the context immediately
+      // This saves it to localStorage so the Dashboard can find the ID
+      if (data && data.business) {
+        setBusiness(data.business);
+      }
+
       navigate('/');
     } catch (err) {
+      console.error(err);
       setError(err.response?.data?.message || 'Invalid email or password');
     } finally {
       setLoading(false);

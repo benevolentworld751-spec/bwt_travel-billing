@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useBusiness } from '../context/BusinessContext';
 import api from '../services/api';
-import { Download, Eye } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const InvoiceList = () => {
@@ -9,7 +9,7 @@ const InvoiceList = () => {
   const [invoices, setInvoices] = useState([]);
 
   useEffect(() => {
-    if (activeBusiness) {
+    if (activeBusiness?._id) {
       api.get(`/invoices?businessId=${activeBusiness._id}`)
          .then(res => setInvoices(res.data))
          .catch(err => console.error(err));
@@ -18,15 +18,36 @@ const InvoiceList = () => {
 
   const handleDownload = async (id, invNum) => {
     try {
-        const response = await api.get(`/invoices/${id}/pdf`, { responseType: 'blob' });
-        const url = window.URL.createObjectURL(new Blob([response.data]));
+        console.log(`Downloading invoice: /invoices/${id}/pdf`);
+        
+        // 1. Make API Call with blob response type
+        const response = await api.get(`/invoices/${id}/pdf`, { 
+            responseType: 'blob' 
+        });
+
+        // 2. Create a Blob from the response
+        const blob = new Blob([response.data], { type: 'application/pdf' });
+        
+        // 3. Create a link element, click it, and remove it
+        const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.setAttribute('download', `Invoice-${invNum}.pdf`);
+        link.setAttribute('download', `Invoice-${invNum}.pdf`); // File name
         document.body.appendChild(link);
         link.click();
+        
+        // Cleanup
+        link.remove();
+        window.URL.revokeObjectURL(url);
+
     } catch (error) {
-        alert("Failed to download PDF");
+        console.error("Download failed:", error);
+        // Show alert if the backend returns 404 (e.g., customer deleted)
+        if(error.response && error.response.status === 404) {
+            alert("Error: The Customer or Business associated with this invoice may have been deleted.");
+        } else {
+            alert("Failed to download PDF. Check console for details.");
+        }
     }
   };
 
@@ -50,7 +71,7 @@ const InvoiceList = () => {
             </tr>
           </thead>
           <tbody>
-            {invoices.map(inv => (
+            {invoices.length > 0 ? invoices.map(inv => (
               <tr key={inv._id} className="border-b hover:bg-gray-50">
                 <td className="p-4 font-medium">{inv.invoiceNumber}</td>
                 <td className="p-4">{new Date(inv.invoiceDate).toLocaleDateString()}</td>
@@ -62,12 +83,20 @@ const InvoiceList = () => {
                   </span>
                 </td>
                 <td className="p-4 flex gap-2">
-                   <button onClick={() => handleDownload(inv._id, inv.invoiceNumber)} className="text-blue-600 hover:text-blue-800">
+                   <button 
+                    onClick={() => handleDownload(inv._id, inv.invoiceNumber)} 
+                    className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                    title="Download PDF"
+                   >
                      <Download size={18} />
                    </button>
                 </td>
               </tr>
-            ))}
+            )) : (
+                <tr>
+                    <td colSpan="6" className="p-4 text-center text-gray-500">No invoices found.</td>
+                </tr>
+            )}
           </tbody>
         </table>
       </div>

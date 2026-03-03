@@ -11,7 +11,7 @@ const invoiceSchema = mongoose.Schema({
   items: [{
     serviceType: { 
       type: String, 
-      enum: ['Flight', 'Train', 'Hotel', 'Visa', 'Tour', 'Bus', 'Other'],
+      enum: ['Flight', 'Train', 'Hotel', 'Visa', 'Tour', 'Bus', 'Reissue', 'Other'],
       required: true 
     },
     description: String,

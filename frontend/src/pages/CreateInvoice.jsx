@@ -148,6 +148,8 @@ const CreateInvoice = () => {
                     <option>Visa</option>
                     <option>Tour</option>
                     <option>Bus</option>
+                    <option>Reissue</option>
+                    
                 </select>
             </div>
             <div className="col-span-2">
