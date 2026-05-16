@@ -1,37 +1,38 @@
 import express from "express";
-import asyncHandler from "express-async-handler";
-
-import { protect } from "../middleware/authMiddleware.js";
 import {
   createInvoice,
+  getInvoices,
+  getInvoiceById,
+  updateInvoice,
+  updateInvoiceStatus,
+  exportBulkInvoices,
   getInvoicePDF,
+  getInvoiceExcel,
+  deleteInvoice,
+  bulkDeleteInvoices
 } from "../controllers/invoiceController.js";
-
-import Invoice from "../models/Invoice.js";
 
 const router = express.Router();
 
-// Get Invoices for a Business
-const getInvoices = asyncHandler(async (req, res) => {
-  const { businessId } = req.query;
+// ── List & Create ──────────────────────────────
+router.get("/",          getInvoices);
+router.post("/",         createInvoice);
 
-  if (!businessId) {
-    res.status(400);
-    throw new Error("Business ID is required");
-  }
+// ── Bulk Export (must be before /:id routes) ──
+router.post("/export-bulk", exportBulkInvoices);
 
-  const invoices = await Invoice.find({ businessId })
-    .populate("customerId", "name email")
-    .sort({ createdAt: -1 });
+// ── Single Invoice CRUD ────────────────────────
+router.get("/:id",       getInvoiceById);
+router.put("/:id",       updateInvoice);
+router.patch("/:id/status", updateInvoiceStatus);
 
-  res.json(invoices);
-});
+// ── Downloads ─────────────────────────────────
+router.get("/:id/pdf",   getInvoicePDF);
+router.get("/:id/excel", getInvoiceExcel);
 
-router
-  .route("/")
-  .post(protect, createInvoice)
-  .get(protect, getInvoices);
+router.delete('/:id', deleteInvoice);
 
-router.route("/:id/pdf").get(protect, getInvoicePDF);
+// Route for bulk delete
+router.post('/bulk-delete', bulkDeleteInvoices);
 
 export default router;

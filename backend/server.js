@@ -17,9 +17,7 @@ import customerRoutes from "./routes/customerRoutes.js";
 import invoiceRoutes from "./routes/invoiceRoutes.js";
 import reportRoutes from "./routes/reportRoutes.js";
 
-
 dotenv.config();
-
 const app = express();
 
 // Fix for __dirname in ES module
@@ -47,25 +45,27 @@ app.use(morgan("dev"));
 
 // 2. Rate Limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
+  windowMs: 35 * 60 * 1000,
   max: 1000,
   message: "Too many requests from this IP, please try again later.",
 });
- app.use("/api", limiter);
+ app.use("/api/", limiter);
 
 // 3. Static folder for uploads
 //app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 // 4. Routes
+
 app.use("/api/auth", authRoutes);
 app.use("/api/businesses", businessRoutes);
 app.use("/api/customers", customerRoutes);
+// app.js or server.js
+// app.use('/api/customers', require('./routes/customerRoutes'));
 app.use("/api/invoices", invoiceRoutes);
 app.use("/api/reports", reportRoutes);
-
 // 5. Error Handler
 app.use(errorHandler);
-
+app.set('etag', false); 
 // 6. Database Connection & Server Start
 const PORT = process.env.PORT || 5000;
 

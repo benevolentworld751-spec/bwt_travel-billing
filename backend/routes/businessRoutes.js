@@ -7,6 +7,9 @@ import { protect } from "../middleware/authMiddleware.js";
 import {
   createBusiness,
   getBusinesses,
+  updateBusiness,
+  deleteBusiness,
+  setDefaultBusiness
 } from "../controllers/businessController.js";
 
 const router = express.Router();
@@ -52,5 +55,14 @@ router
   .route("/")
   .post(protect, upload.single("logo"), createBusiness)
   .get(protect, getBusinesses);
+
+// Update Business
+router.put('/:id', protect, upload.single('logo'), updateBusiness);
+
+// Delete Business
+router.delete('/:id', protect, deleteBusiness);
+
+// Set Default Business
+router.patch('/:id/default', protect, setDefaultBusiness);
 
 export default router;

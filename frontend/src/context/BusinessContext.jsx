@@ -1,41 +1,51 @@
-// src/context/BusinessContext.js
-import { createContext, useContext, useState, useEffect } from "react";
-import api from "../services/api"; // <--- 1. FIX: Import API
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import api from "../services/api";
 
 const BusinessContext = createContext();
 
 export const BusinessProvider = ({ children }) => {
   const [activeBusiness, setActiveBusiness] = useState(null);
-  const [businesses, setBusinesses] = useState([]); // List of all businesses
+  const [businesses, setBusinesses] = useState([]); 
   const [loading, setLoading] = useState(true);
 
- // Inside BusinessProvider...
-  
- 
+  // 1. Memoized Fetch Function (Prevents Infinite Loops)
+  const fetchBusinesses = useCallback(async () => {
+    const userStr = localStorage.getItem("user");
+    if (!userStr) return;
 
-const fetchBusinesses = async () => {
-  const userStr = localStorage.getItem("user");
+    try {
+      const { data } = await api.get("/businesses");
+      const businessList = data || [];
+      setBusinesses(businessList);
 
-  // 🚫 DO NOT CALL API IF NOT LOGGED IN
-  if (!userStr) return;
-
-  try {
-    const { data } = await api.get("/businesses");
-    setBusinesses(data || []);
-  } catch (error) {
-    if (error.response?.status === 401) {
-      console.log("Not authenticated. Skipping fetch.");
-      return; // STOP LOOP
+      // Professional UX: If no active business is set, but we have businesses, 
+      // automatically set the first one as active.
+      const storedActive = localStorage.getItem("activeBusiness");
+      if (!storedActive && businessList.length > 0) {
+        selectBusiness(businessList[0]);
+      }
+    } catch (error) {
+      if (error.response?.status === 401) {
+        console.log("Session expired or unauthenticated.");
+      } else {
+        console.error("Failed to fetch businesses", error);
+      }
     }
+  }, []);
 
-    console.error("Failed to fetch businesses", error);
-  }
-};
+  // 2. Select Business (Persistence Logic)
+  const selectBusiness = (businessData) => {
+    if (!businessData) return;
+    setActiveBusiness(businessData);
+    localStorage.setItem("activeBusiness", JSON.stringify(businessData));
+  };
 
-  // 2. FIX: Combined useEffect for App Load (Persistence + Fetching)
+  // 3. Initialization on App Load
   useEffect(() => {
     const initBusinessContext = async () => {
-      // A. Restore Active Business from LocalStorage (Prevents blank page on refresh)
+      setLoading(true);
+      
+      // A. Restore Active Business from LocalStorage
       const storedBusiness = localStorage.getItem("activeBusiness");
       if (storedBusiness) {
         try {
@@ -45,42 +55,30 @@ const fetchBusinesses = async () => {
         }
       }
 
-      // B. Fetch the list of businesses
+      // B. Fetch the list (memoized function)
       await fetchBusinesses();
       
       setLoading(false);
     };
 
     initBusinessContext();
-  }, []);
+  }, [fetchBusinesses]); // Depend on memoized function
 
-  // 3. Set Business (Login)
-  const setBusiness = async (businessData) => {
-    if (!businessData) return;
-    
-    // Save to State & Storage
-    setActiveBusiness(businessData);
-    localStorage.setItem("activeBusiness", JSON.stringify(businessData));
-
-    // Refresh the list (in case it's the first login)
-    await fetchBusinesses(); 
-  };
-
-  // 4. Logout Business
+  // 4. Logout Logic
   const logoutBusiness = () => {
     setActiveBusiness(null);
-    setBusinesses([]); // Clear the list so next user doesn't see it
+    setBusinesses([]);
     localStorage.removeItem("activeBusiness");
   };
 
   return (
     <BusinessContext.Provider value={{ 
         activeBusiness, 
-        setBusiness, 
+        setBusiness: selectBusiness, // Renamed for clarity
         businesses, 
         logoutBusiness, 
         loading,
-        fetchBusinesses // Optional: Export if you need to manually refresh list elsewhere
+        fetchBusinesses 
     }}>
       {children}
     </BusinessContext.Provider>

@@ -10,7 +10,9 @@ import Businesses from './pages/Businesses';
 import Customers from './pages/Customers';
 import CreateInvoice from './pages/CreateInvoice';
 import InvoiceList from './pages/InvoiceList';
-
+import EditInvoice from './pages/EditInvoice';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword'; // Import ResetPassword
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -38,14 +40,15 @@ function App() {
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
-            
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password/:token" element={<ResetPassword />} /> 
             {/* Protected Routes */}
             <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/businesses" element={<ProtectedRoute><Businesses /></ProtectedRoute>} />
             <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
             <Route path="/invoices" element={<ProtectedRoute><InvoiceList /></ProtectedRoute>} />
             <Route path="/invoices/create" element={<ProtectedRoute><CreateInvoice /></ProtectedRoute>} />
-            
+            <Route path="/invoices/:id/edit" element={<ProtectedRoute><EditInvoice /></ProtectedRoute>} />
             {/* Catch all - redirect to dashboard */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

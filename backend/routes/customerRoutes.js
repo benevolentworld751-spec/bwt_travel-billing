@@ -5,15 +5,21 @@ import {
   getCustomers,
   createCustomer,
   deleteCustomer,
+  updateCustomer
 } from "../controllers/customerController.js";
 
 const router = express.Router();
 
+// Route: /api/customers
 router
   .route("/")
   .get(protect, getCustomers)
   .post(protect, validateCustomer, createCustomer);
 
-router.route("/:id").delete(protect, deleteCustomer);
+// Route: /api/customers/:id
+router
+  .route("/:id")
+  .put(protect, validateCustomer, updateCustomer) // Handle Update
+  .delete(protect, deleteCustomer);             // Handle Delete
 
 export default router;

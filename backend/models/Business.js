@@ -42,9 +42,13 @@ const businessSchema = new mongoose.Schema(
     upiId: { type: String, default: "" },           // <-- Add this
     signatureUrl: { type: String, default: "" },    // <-- Add this
     bankDetails: { type: bankDetailsSchema, default: () => ({}) },
+
+    isDefault: { type: Boolean, default: false }, // ADD THIS LINE
   },
   { timestamps: true }
 );
+
+
 
 const Business = mongoose.model("Business", businessSchema);
 export default Business;

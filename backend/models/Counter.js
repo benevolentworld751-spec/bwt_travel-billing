@@ -1,6 +1,5 @@
 // models/Counter.js
 import mongoose from "mongoose";
-
 const counterSchema = new mongoose.Schema({
   businessId: { 
     type: mongoose.Schema.Types.ObjectId, 
