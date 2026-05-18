@@ -8,7 +8,9 @@ import {
 } from "../services/pdfService.js";
 import { generateInvoiceExcel, generateBulkExcel } from "../services/excelService.js";
 
+// ==============================
 // CREATE INVOICE
+// ==============================
 export const createInvoice = asyncHandler(async (req, res) => {
   const {
     businessId,
@@ -57,8 +59,9 @@ export const createInvoice = asyncHandler(async (req, res) => {
   res.status(201).json(invoice);
 });
 
-
+// ==============================
 // GET INVOICES (LIST VIEW)
+// ==============================
 export const getInvoices = asyncHandler(async (req, res) => {
   const { businessId, customerId } = req.query;
 
@@ -72,8 +75,9 @@ export const getInvoices = asyncHandler(async (req, res) => {
   res.json(invoices);
 });
 
-
+// ==============================
 // GET SINGLE INVOICE BY ID
+// ==============================
 export const getInvoiceById = asyncHandler(async (req, res) => {
   const invoice = await Invoice.findById(req.params.id).populate("customerId");
 
@@ -85,8 +89,9 @@ export const getInvoiceById = asyncHandler(async (req, res) => {
   res.json(invoice);
 });
 
-
+// ==============================
 // UPDATE INVOICE (FULL EDIT)
+// ==============================
 export const updateInvoice = asyncHandler(async (req, res) => {
   const invoice = await Invoice.findById(req.params.id);
 
